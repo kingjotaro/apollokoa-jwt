@@ -1,0 +1,21 @@
+{
+  "name": "apollokoa-jwt",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "apollo-server-koa": "^3.13.0",
+    "graphql": "^16.8.2",
+    "jsonwebtoken": "^9.0.2",
+    "kcors": "^2.2.2",
+    "koa": "^2.15.3",
+    "koa-bodyparser": "^4.4.1",
+    "koa-router": "^12.0.1"
+  }
+}
