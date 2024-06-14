@@ -1,11 +1,8 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]; then
+if [ -z "$1" ]; then
     echo "need token"
     exit 1
 fi
 
-URL="http://localhost:3000/protegido"
-TOKEN="$1"
-
-curl -X GET -s -H "Authorization: Bearer $TOKEN" "$URL"
+curl -s -H "Authorization: $1" "http://localhost:3000/protegido"

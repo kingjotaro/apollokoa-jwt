@@ -86,27 +86,23 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: ({ ctx }) => {
-    const authHeader = ctx.headers.authorization;
-    console.log('Authorization Header in context:', authHeader);
-    if (authHeader) {
-      const parts = authHeader.split(" ");
-      if (parts.length === 2 && parts[0] === "Bearer") {
-        const token = parts[1];
-        console.log('Token in context:', token);
-        try {
-          const user = jwt.verify(token, SECRET_KEY);
-          console.log('User in context:', user);
-          return { user };
-        } catch (err) {
-          console.log("Token inválido no contexto:", err);
-        }
-      } else {
-        console.log("Formato de token inválido");
+    const token = ctx.headers.authorization || '';
+    
+    if (token) {
+      try {
+        const user = jwt.verify(token, SECRET_KEY);
+        return { user };
+      } catch (err) {
+        console.log("Token inválido no contexto:", err);
       }
+    } else {
+      console.log("Token inválido ou ausente");
     }
+
     return {};
   }
 });
+
 
 async function startServer() {
   await server.start();
