@@ -3,7 +3,7 @@ import Router from "koa-router";
 import bodyParser from "koa-bodyparser";
 import jwt from "jsonwebtoken";
 import { ApolloServer, gql } from "apollo-server-koa";
-import cors from "kcors";
+import cors from "@koa/cors";
 
 const app = new Koa();
 const router = new Router();
@@ -19,17 +19,22 @@ const users = [
 // Middleware para autenticação JWT
 const authenticateJWT = async (ctx, next) => {
   const authHeader = ctx.headers.authorization;
+  console.log('Authorization Header:', authHeader);
   if (authHeader) {
     const token = authHeader.split(" ")[1]; // Pega o token após "Bearer"
+    console.log('Token:', token);
     try {
       const decoded = jwt.verify(token, SECRET_KEY);
+      console.log('Decoded:', decoded);
       ctx.state.user = decoded;
       await next();
     } catch (err) {
+      console.log("Token inválido:", err);
       ctx.status = 401;
       ctx.body = { error: "Token inválido" };
     }
   } else {
+    console.log("Token necessário");
     ctx.status = 401;
     ctx.body = { error: "Token necessário" };
   }
@@ -45,7 +50,8 @@ router.post("/login", async (ctx) => {
   if (user) {
     const token = jwt.sign(
       { id: user.id, username: user.username },
-      SECRET_KEY
+      SECRET_KEY,
+      { expiresIn: '1h' } // Token expira em 1 hora
     );
     ctx.body = { token };
   } else {
@@ -54,15 +60,11 @@ router.post("/login", async (ctx) => {
   }
 });
 
-// Rota protegida
-router.get("/protegido", authenticateJWT, async (ctx) => {
-  ctx.body = { message: "Rota protegida alcançada!" };
-});
-
 // Tipo de Schema do GraphQL
 const typeDefs = gql`
   type Query {
     hello: String
+    protected: String
   }
 `;
 
@@ -70,11 +72,41 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     hello: () => "Olá, mundo!",
-  },
+    protected: (parent, args, context) => {
+      if (!context.user) {
+        throw new Error("Não autenticado");
+      }
+      return "Rota protegida alcançada!";
+    }
+  }
 };
 
 // Criação do servidor Apollo
-const server = new ApolloServer({ typeDefs, resolvers });
+const server = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: ({ ctx }) => {
+    const authHeader = ctx.headers.authorization;
+    console.log('Authorization Header in context:', authHeader);
+    if (authHeader) {
+      const parts = authHeader.split(" ");
+      if (parts.length === 2 && parts[0] === "Bearer") {
+        const token = parts[1];
+        console.log('Token in context:', token);
+        try {
+          const user = jwt.verify(token, SECRET_KEY);
+          console.log('User in context:', user);
+          return { user };
+        } catch (err) {
+          console.log("Token inválido no contexto:", err);
+        }
+      } else {
+        console.log("Formato de token inválido");
+      }
+    }
+    return {};
+  }
+});
 
 async function startServer() {
   await server.start();
